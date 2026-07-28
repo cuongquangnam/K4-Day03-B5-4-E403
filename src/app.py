@@ -68,11 +68,11 @@ def run_react_agent(user_query: str, provider):
         print(f"\n--- 🔄 Vòng lặp ReAct (Step {step}/{MAX_ITERATIONS}) ---")
         
         if step == 1:
-            print("🧠 Thought: Cần tìm danh sách bài đăng phù hợp yêu cầu user.")
-            print("🛠️ Action: search_home_info['Quận 7', '6 tháng', 7000000, 'studio']")
+            print("🧠 Thought: Cần tìm danh sách bài đăng phù hợp yêu cầu user với các tiêu chí về thu nhập, đi lại và diện tích.")
+            print("🛠️ Action: search_home_info['Quận 7', '6 tháng', 7000000, 'studio', 12000000, 'gần VinUni', 20, 25]")
             
             # Thực thi tool
-            obs = search_home_info("Quận 7", "6 tháng", 7000000, "studio")
+            obs = search_home_info("Quận 7", "6 tháng", 7000000, "studio", 12000000, "gần VinUni", 20, 25)
             print(f"👁️ Observation: {obs}")
             
         elif step == 2:

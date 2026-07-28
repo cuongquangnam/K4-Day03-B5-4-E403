@@ -113,7 +113,16 @@ def _batdongsan_bedroom_slug(room_info: str) -> str | None:
     return None
 
 
-def search_home_info(location: str, rent_duration: str, budget: float, room_info: str) -> str:
+def search_home_info(
+    location: str,
+    rent_duration: str,
+    budget: float,
+    room_info: str,
+    monthly_income: float | None = None,
+    commute_preference: str | None = None,
+    max_commute_minutes: int | None = None,
+    min_area_m2: float | None = None,
+) -> str:
     """
     Tìm danh sách bài đăng cho thuê phù hợp với nhu cầu người dùng.
 
@@ -122,9 +131,13 @@ def search_home_info(location: str, rent_duration: str, budget: float, room_info
         rent_duration (str): Thời gian thuê dự kiến (ví dụ: "6 tháng").
         budget (float): Ngân sách tối đa mỗi tháng (VND).
         room_info (str): Nhu cầu số phòng/loại phòng.
+        monthly_income (float | None): Thu nhập hàng tháng của người dùng.
+        commute_preference (str | None): Mô tả mục tiêu đi lại như "gần trường", "gần công ty".
+        max_commute_minutes (int | None): Thời gian đi lại tối đa mong muốn.
+        min_area_m2 (float | None): Diện tích tối thiểu mong muốn.
 
     Returns:
-        str: Danh sách gợi ý gồm nguồn đăng, liên hệ và giá.
+        str: Danh sách gợi ý gồm nguồn đăng, liên hệ và giá, kèm nhận xét về khả năng chi trả và phù hợp đi lại.
     """
     for value, name in [
         (location, "location"),
@@ -138,6 +151,24 @@ def search_home_info(location: str, rent_duration: str, budget: float, room_info
         return (
             "[INPUT ERROR] 'budget' không hợp lệ. "
             "Vui lòng yêu cầu người dùng nhập ngân sách dạng số dương (VND)."
+        )
+
+    if monthly_income is not None and (not isinstance(monthly_income, (int, float)) or monthly_income <= 0):
+        return (
+            "[INPUT ERROR] 'monthly_income' không hợp lệ. "
+            "Vui lòng yêu cầu người dùng nhập thu nhập hàng tháng dạng số dương."
+        )
+
+    if max_commute_minutes is not None and (not isinstance(max_commute_minutes, (int, float)) or max_commute_minutes <= 0):
+        return (
+            "[INPUT ERROR] 'max_commute_minutes' không hợp lệ. "
+            "Vui lòng yêu cầu người dùng nhập thời gian đi lại tối đa dạng số dương."
+        )
+
+    if min_area_m2 is not None and (not isinstance(min_area_m2, (int, float)) or min_area_m2 <= 0):
+        return (
+            "[INPUT ERROR] 'min_area_m2' không hợp lệ. "
+            "Vui lòng yêu cầu người dùng nhập diện tích tối thiểu dạng số dương."
         )
 
     # ----------------------------
@@ -402,10 +433,35 @@ def search_home_info(location: str, rent_duration: str, budget: float, room_info
             f"Profile: {item.get('profile', 'N/A')}"
         )
 
+    criteria_parts = []
+    if monthly_income is not None:
+        criteria_parts.append(f"thu nhập hiện có {monthly_income:,.0f} VND")
+    if max_commute_minutes is not None:
+        criteria_parts.append(f"thời gian đi lại tối đa {max_commute_minutes} phút")
+    if min_area_m2 is not None:
+        criteria_parts.append(f"diện tích tối thiểu {min_area_m2} m²")
+    if commute_preference:
+        criteria_parts.append(f"ưu tiên đi lại gần {commute_preference}")
+
+    affordability_note = ""
+    if monthly_income is not None and budget is not None:
+        ratio = budget / monthly_income
+        if ratio > 0.4:
+            affordability_note = (
+                f"\n⚠️ Chi phí thuê chiếm khoảng {ratio:.0%} thu nhập, cao hơn mức khuyến nghị nên cần cân nhắc kỹ."
+            )
+        else:
+            affordability_note = (
+                f"\n✅ Chi phí thuê chiếm khoảng {ratio:.0%} thu nhập, ở mức hợp lý so với thu nhập hiện có."
+            )
+
+    criteria_text = ", ".join(criteria_parts) if criteria_parts else "không có tiêu chí bổ sung"
     return (
         "Kết quả tìm kiếm (best-effort) từ Facebook + Batdongsan theo yêu cầu "
         f"(location={location}, rent_duration={rent_duration}, budget={budget}, room_info={room_info}):\n"
         + "\n".join(summary_lines)
+        + f"\n\nTiêu chí đánh giá bổ sung: {criteria_text}."
+        + affordability_note
     )
 
 
