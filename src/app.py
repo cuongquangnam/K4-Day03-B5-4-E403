@@ -62,6 +62,7 @@ def run_react_agent(user_query: str, provider):
     step = 0
     completed = False
     
+    best_listing_phone = "0909123456"
     while step < MAX_ITERATIONS:
         step += 1
         print(f"\n--- 🔄 Vòng lặp ReAct (Step {step}/{MAX_ITERATIONS}) ---")
@@ -75,21 +76,38 @@ def run_react_agent(user_query: str, provider):
             print(f"👁️ Observation: {obs}")
             
         elif step == 2:
-            print("🧠 Thought: Cần xác nhận tình trạng còn phòng với chủ nhà phù hợp nhất.")
-            print("🛠️ Action: send_msg['0909123456', 'Anh/chị còn phòng studio ở Quận 7 không ạ?']")
-            obs = send_msg(
-                "0909123456", "Anh/chị còn phòng studio ở Quận 7 không ạ?"
-            )
-            print(f"👁️ Observation: {obs}")
+            print("🧠 Thought: Bắt đầu vòng loop trò chuyện với người cho thuê để xác nhận còn phòng và khớp lịch xem nhà.")
+            landlord_prompts = [
+                "Anh/chị còn phòng studio ở Quận 7 không ạ?",
+                "Nếu còn phòng, anh/chị cho em xin các khung giờ có thể xem nhà trong tuần này nhé.",
+            ]
+            conversation_logs = []
+            for round_idx, msg in enumerate(landlord_prompts, start=1):
+                print(f"\n📨 [Loop Round {round_idx}]")
+                print(f"🛠️ Action: send_msg['{best_listing_phone}', '{msg}']")
+                send_obs = send_msg(best_listing_phone, msg)
+                print(f"👁️ Observation(send_msg): {send_obs}")
+
+                print("🛠️ Action: get_calendar[]")
+                cal_obs = get_calendar()
+                print(f"👁️ Observation(get_calendar): {cal_obs}")
+                conversation_logs.append((send_obs, cal_obs))
+
+            # Dành cho bước cuối tổng hợp phương án xác nhận
+            last_send_obs, last_cal_obs = conversation_logs[-1]
+            print("✅ Kết thúc loop hội thoại với người cho thuê.")
 
         elif step == 3:
-            print("🧠 Thought: Nếu còn phòng, lấy lịch rảnh user để đề xuất lịch xem nhà.")
-            print("🛠️ Action: get_calendar[]")
-            obs = get_calendar()
-            print(f"👁️ Observation: {obs}")
+            print("🧠 Thought: Đưa ra 3 phương án để user confirm chấp nhận câu trả lời.")
             print(
-                "🏁 Final Answer: Mình đã tìm được 2 lựa chọn phù hợp, một chủ nhà phản hồi còn phòng. "
-                "Bạn có muốn mình gửi đề xuất lịch xem nhà theo các khung giờ rảnh vừa lấy không?"
+                "🏁 Final Answer:\n"
+                "Mình đã trao đổi với người cho thuê và đồng bộ lịch rảnh của bạn.\n"
+                f"- Trạng thái người cho thuê mới nhất: {last_send_obs}\n"
+                f"- Lịch rảnh user mới nhất: {last_cal_obs}\n\n"
+                "Bạn vui lòng chọn 1 trong 3 option để xác nhận:\n"
+                "1) ✅ Đồng ý lịch gợi ý gần nhất, tiếp tục đặt lịch xem nhà.\n"
+                "2) 🔁 Yêu cầu agent thương lượng lại khung giờ khác với chủ nhà.\n"
+                "3) ❌ Không tiếp tục với lựa chọn này, quay lại bước tìm phòng khác."
             )
             completed = True
             break

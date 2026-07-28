@@ -5,7 +5,6 @@ Hỗ trợ chuyển đổi linh hoạt giữa các nhà cung cấp AI chỉ bằ
 
 import os
 import sys
-import json
 import requests
 from dotenv import load_dotenv
 
@@ -28,7 +27,7 @@ class GeminiProvider(BaseLLMProvider):
     """Google Gemini Provider"""
     def __init__(self, api_key: str = None, model: str = None):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
-        self.model_name = model or os.getenv("LLM_MODEL") or "gemini-2.5-flash"
+        self.model_name = model or os.getenv("LLM_MODEL") or "gemini-2.0-flash"
         
     def generate(self, prompt: str, system_prompt: str = "") -> str:
         if not self.api_key or self.api_key == "your_gemini_api_key_here":
@@ -56,7 +55,7 @@ class OpenAIProvider(BaseLLMProvider):
         if not self.api_key or self.api_key == "your_openai_api_key_here":
             return "[OpenAI Error]: Chưa cấu hình OPENAI_API_KEY trong file .env!"
         try:
-            import openai
+            import openai  # pyright: ignore[reportMissingImports]
             client = openai.OpenAI(api_key=self.api_key)
             messages = []
             if system_prompt:
@@ -82,7 +81,7 @@ class AnthropicProvider(BaseLLMProvider):
         if not self.api_key or self.api_key == "your_anthropic_api_key_here":
             return "[Anthropic Error]: Chưa cấu hình ANTHROPIC_API_KEY trong file .env!"
         try:
-            import anthropic
+            import anthropic  # pyright: ignore[reportMissingImports]
             client = anthropic.Anthropic(api_key=self.api_key)
             kwargs = {
                 "model": self.model_name,
@@ -160,5 +159,5 @@ if __name__ == "__main__":
     print("=== TEST MULTI-PROVIDER LLM ADAPTER ===")
     provider = get_llm_provider()
     print(f"✅ Provider đang dùng: {provider.__class__.__name__}")
-    print(f"🤖 User Query: Hello")
+    print("🤖 User Query: Hello")
     print(f"💬 Response  : {provider.generate('Hello')}")
